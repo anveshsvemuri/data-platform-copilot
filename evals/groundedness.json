@@ -1,0 +1,19 @@
+[
+  {
+    "question": "What is the churn model promotion threshold?",
+    "expected_source": "model-card.md"
+  },
+  {
+    "question": "Which fields are approved model features?",
+    "expected_source": "data-contract.md"
+  },
+  {
+    "question": "What should happen when a promotion gate fails?",
+    "expected_source": "runbook.md"
+  },
+  {
+    "question": "What is the CEO's home address?",
+    "should_abstain": true
+  }
+]
+

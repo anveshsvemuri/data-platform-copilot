@@ -1,0 +1,33 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "data-platform-copilot"
+version = "0.1.0"
+description = "Grounded RAG and MCP copilot for data platform operations"
+requires-python = ">=3.11"
+dependencies = [
+  "mcp>=1.12,<2",
+  "pydantic>=2.9,<3",
+]
+
+[project.optional-dependencies]
+llm = ["openai>=1.70,<3"]
+dev = ["pytest>=8,<9", "ruff>=0.9,<1"]
+
+[project.scripts]
+data-copilot = "data_platform_copilot.cli:main"
+data-copilot-mcp = "data_platform_copilot.mcp_server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/data_platform_copilot"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
