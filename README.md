@@ -8,10 +8,11 @@ A purpose-built LLM/RAG/MCP portfolio project for safe data-platform operations.
 
 ```mermaid
 flowchart LR
-    A[Approved Markdown] --> B[Deterministic retriever]
+    A[Approved Markdown] --> B[Section chunking]
+    B --> V[Persistent vector index]
     Q[Operator question] --> C[Safety guardrails]
-    C --> B
-    B --> D{Provider configured?}
+    C --> V
+    V --> D{Provider configured?}
     D -->|No| E[No-key grounded answer]
     D -->|Yes| F[LLM synthesis]
     E --> G[Structured answer + citations]
@@ -23,6 +24,8 @@ flowchart LR
 ## Capabilities
 
 - RAG over version-controlled approved documentation
+- Section-aware chunks with stable IDs, metadata, and deterministic vectors
+- Atomic persistent index with document-fingerprint freshness validation
 - Citations and explicit abstention when evidence is missing
 - Optional OpenAI synthesis with timeout and bounded retries
 - Deterministic no-key mode for tests and recruiter demos
@@ -39,11 +42,13 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
 data-copilot "What is the churn model promotion threshold?"
+data-copilot --index .cache/knowledge-index.json --build-index
+data-copilot --index .cache/knowledge-index.json "How do I recover a failed pipeline?"
 data-copilot --evaluate evals/groundedness.json
 data-copilot-mcp
 ```
 
-The MCP server uses stdio and exposes `ask_platform`, `list_approved_sources`, and `get_pipeline_status`. Configure an MCP client to launch `data-copilot-mcp` from the repository root.
+The MCP server uses stdio and exposes `ask_platform`, `list_approved_sources`, and `get_pipeline_status`. Configure an MCP client to launch `data-copilot-mcp` from the repository root. Set `RETRIEVAL_INDEX=.cache/knowledge-index.json` to load the validated persistent index; otherwise the same deterministic chunks are built in memory.
 
 ## Security and responsible AI
 
@@ -52,4 +57,3 @@ Only version-controlled Markdown is indexed. Raw customer data and PII are exclu
 ## Evaluation
 
 The committed dataset verifies source selection, abstention, and safety behavior without calling an external LLM. Production extensions should add provider-specific groundedness scoring, trace export, token/cost/latency dashboards, semantic caching, and human review sampling.
-

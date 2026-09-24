@@ -14,5 +14,5 @@ jobs:
       - run: pip install -e '.[dev]'
       - run: ruff check .
       - run: pytest -q
-      - run: data-copilot --evaluate evals/groundedness.json
-
+      - run: data-copilot --index /tmp/knowledge-index.json --build-index
+      - run: data-copilot --index /tmp/knowledge-index.json --evaluate evals/groundedness.json

@@ -5,18 +5,37 @@ from pathlib import Path
 
 from .guardrails import validate_question
 from .models import Citation, CopilotAnswer
-from .retrieval import Retriever, load_documents
+from .retrieval import (
+    Retriever,
+    build_index,
+    chunk_documents,
+    extract_grounded_answer,
+    load_documents,
+    load_index,
+)
 
 
 class DataPlatformCopilot:
-    def __init__(self, knowledge_dir: Path):
-        self.retriever = Retriever(load_documents(knowledge_dir))
+    def __init__(self, knowledge_dir: Path, index_path: Path | None = None):
+        documents = load_documents(knowledge_dir)
+        chunks = load_index(documents, index_path) if index_path else chunk_documents(documents)
+        self.retriever = Retriever(chunks)
+
+    @staticmethod
+    def create_index(knowledge_dir: Path, index_path: Path) -> int:
+        return len(build_index(load_documents(knowledge_dir), index_path))
 
     def ask(self, question: str) -> CopilotAnswer:
         question = validate_question(question)
         results = self.retriever.search(question)
         citations = [
-            Citation(source=result.source, excerpt=result.text[:280], score=result.score)
+            Citation(
+                chunk_id=result.chunk_id,
+                source=result.source,
+                section=result.section,
+                excerpt=result.text[:280],
+                score=result.score,
+            )
             for result in results
         ]
         if not results:
@@ -28,9 +47,9 @@ class DataPlatformCopilot:
             )
         if os.getenv("OPENAI_API_KEY"):
             return self._openai_answer(question, results, citations)
-        summary = " ".join(result.text.splitlines()[0].lstrip("# ") for result in results)
+        summary = extract_grounded_answer(question, results)
         return CopilotAnswer(
-            answer=f"Based on the approved platform documentation: {summary}.",
+            answer=f"Based on the approved platform documentation: {summary}",
             citations=citations,
             grounded=True,
             mode="deterministic",
@@ -55,4 +74,3 @@ class DataPlatformCopilot:
             grounded=True,
             mode="openai",
         )
-

@@ -14,7 +14,9 @@ def test_grounded_answer_contains_citation(monkeypatch):
     answer = DataPlatformCopilot(ROOT / "knowledge").ask("What is the model promotion threshold?")
     assert answer.grounded
     assert answer.mode == "deterministic"
+    assert "0.70" in answer.answer
     assert any(citation.source == "model-card.md" for citation in answer.citations)
+    assert all(citation.chunk_id and citation.section for citation in answer.citations)
 
 
 def test_unknown_question_abstains():
@@ -35,4 +37,3 @@ def test_guardrail_blocks_unsafe_questions(question):
 def test_evaluation_dataset_passes():
     metrics = evaluate(DataPlatformCopilot(ROOT / "knowledge"), ROOT / "evals/groundedness.json")
     assert metrics["pass_rate"] == 1.0
-

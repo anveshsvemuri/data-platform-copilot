@@ -15,10 +15,15 @@ def knowledge_path() -> Path:
     return Path(os.getenv("KNOWLEDGE_DIR", "knowledge"))
 
 
+def index_path() -> Path | None:
+    configured = os.getenv("RETRIEVAL_INDEX")
+    return Path(configured) if configured else None
+
+
 @mcp.tool()
 def ask_platform(question: str) -> str:
     """Answer a data-platform question using approved documents with citations."""
-    return DataPlatformCopilot(knowledge_path()).ask(question).model_dump_json(indent=2)
+    return DataPlatformCopilot(knowledge_path(), index_path()).ask(question).model_dump_json(indent=2)
 
 
 @mcp.tool()
@@ -44,4 +49,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

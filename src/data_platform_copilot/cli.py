@@ -11,9 +11,17 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Grounded data-platform copilot")
     parser.add_argument("question", nargs="?")
     parser.add_argument("--knowledge", type=Path, default=Path("knowledge"))
+    parser.add_argument("--index", type=Path, help="Persistent retrieval index to load or build")
+    parser.add_argument("--build-index", action="store_true")
     parser.add_argument("--evaluate", type=Path)
     args = parser.parse_args()
-    copilot = DataPlatformCopilot(args.knowledge)
+    if args.build_index:
+        if not args.index:
+            parser.error("--build-index requires --index")
+        chunks = DataPlatformCopilot.create_index(args.knowledge, args.index)
+        print(f"indexed chunks={chunks} output={args.index}")
+        return
+    copilot = DataPlatformCopilot(args.knowledge, args.index)
     if args.evaluate:
         print(evaluate(copilot, args.evaluate))
     elif args.question:
@@ -24,4 +32,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
