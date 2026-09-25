@@ -17,6 +17,7 @@ flowchart LR
     D -->|Yes| F[LLM synthesis]
     E --> G[Structured answer + citations]
     F --> G
+    G --> T[Privacy-safe JSONL trace]
     M[MCP client] --> H[Allowlisted MCP tools]
     H --> G
 ```
@@ -33,6 +34,7 @@ flowchart LR
 - Prompt-injection, destructive-SQL, PII, and question-length guardrails
 - Pydantic structured output contracts
 - Versioned evaluation dataset with groundedness quality gate
+- Privacy-safe traces for latency, token usage, cost, model, and prompt version
 - Docker packaging and GitHub Actions CI
 
 ## Run
@@ -50,10 +52,22 @@ data-copilot-mcp
 
 The MCP server uses stdio and exposes `ask_platform`, `list_approved_sources`, and `get_pipeline_status`. Configure an MCP client to launch `data-copilot-mcp` from the repository root. Set `RETRIEVAL_INDEX=.cache/knowledge-index.json` to load the validated persistent index; otherwise the same deterministic chunks are built in memory.
 
+## Observability
+
+Set `COPILOT_TRACE_PATH=.cache/traces.jsonl` to append one structured event for every
+completed answer. Events include a random event ID, timestamp, SHA-256 question hash,
+prompt version, mode, model, groundedness, citation count, latency, and token usage.
+Questions, answers, retrieved passages, API keys, and customer data are never logged.
+
+No model pricing is hard-coded. Set `OPENAI_INPUT_COST_PER_MILLION` and
+`OPENAI_OUTPUT_COST_PER_MILLION` when cost reporting is required; otherwise cost is
+recorded as `null`. Deterministic mode uses a documented character-based token
+estimate, while OpenAI mode records the provider's returned usage counts.
+
 ## Security and responsible AI
 
 Only version-controlled Markdown is indexed. Raw customer data and PII are excluded. Tool access is allowlisted and read-only. Retrieved text is treated as untrusted context, answers cite evidence, and unsupported questions receive an abstention. See `.env.example`; never commit API keys.
 
 ## Evaluation
 
-The committed dataset verifies source selection, abstention, and safety behavior without calling an external LLM. Production extensions should add provider-specific groundedness scoring, trace export, token/cost/latency dashboards, semantic caching, and human review sampling.
+The committed dataset verifies source selection, abstention, and safety behavior without calling an external LLM. Production extensions should add provider-specific groundedness scoring, trace export dashboards, semantic caching, and human review sampling.
