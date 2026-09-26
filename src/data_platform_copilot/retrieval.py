@@ -47,7 +47,7 @@ def _tokens(text: str) -> list[str]:
     ]
 
 
-def _vectorize(text: str) -> tuple[float, ...]:
+def vectorize_text(text: str) -> tuple[float, ...]:
     """Create a stable, dependency-free feature-hashing vector."""
     vector = [0.0] * VECTOR_DIMENSIONS
     for token in _tokens(text):
@@ -111,7 +111,7 @@ def chunk_documents(
                         source=document.source,
                         section=section,
                         text=text,
-                        vector=_vectorize(f"{section} {text}"),
+                        vector=vectorize_text(f"{section} {text}"),
                     )
                 )
                 if start + max_words >= len(words):
@@ -158,7 +158,7 @@ class Retriever:
         self.chunks = chunks
 
     def search(self, query: str, limit: int = 3) -> list[SearchResult]:
-        query_vector = _vectorize(query)
+        query_vector = vectorize_text(query)
         query_tokens = set(_tokens(query))
         if not query_tokens:
             return []

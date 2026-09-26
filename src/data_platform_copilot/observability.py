@@ -23,6 +23,7 @@ class TraceRecord:
     input_tokens: int
     output_tokens: int
     estimated_cost_usd: float | None
+    cache_hit: bool
 
 
 def estimate_tokens(text: str) -> int:
@@ -56,6 +57,7 @@ def create_trace(
     latency_ms: float,
     input_tokens: int,
     output_tokens: int,
+    cache_hit: bool = False,
 ) -> TraceRecord:
     return TraceRecord(
         event_id=str(uuid.uuid4()),
@@ -70,6 +72,7 @@ def create_trace(
         input_tokens=input_tokens,
         output_tokens=output_tokens,
         estimated_cost_usd=calculate_cost(input_tokens, output_tokens),
+        cache_hit=cache_hit,
     )
 
 

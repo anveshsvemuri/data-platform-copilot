@@ -17,6 +17,7 @@ flowchart LR
     D -->|Yes| F[LLM synthesis]
     E --> G[Structured answer + citations]
     F --> G
+    G --> K[Semantic response cache]
     G --> T[Privacy-safe JSONL trace]
     M[MCP client] --> H[Allowlisted MCP tools]
     H --> G
@@ -35,6 +36,7 @@ flowchart LR
 - Pydantic structured output contracts
 - Versioned evaluation dataset with groundedness quality gate
 - Privacy-safe traces for latency, token usage, cost, model, and prompt version
+- Persistent semantic response cache with document and prompt invalidation
 - Docker packaging and GitHub Actions CI
 
 ## Run
@@ -46,6 +48,7 @@ pip install -e '.[dev]'
 data-copilot "What is the churn model promotion threshold?"
 data-copilot --index .cache/knowledge-index.json --build-index
 data-copilot --index .cache/knowledge-index.json "How do I recover a failed pipeline?"
+data-copilot --index .cache/knowledge-index.json --cache .cache/responses.json "How do I recover a failed pipeline?"
 data-copilot --evaluate evals/groundedness.json
 data-copilot-mcp
 ```
@@ -64,10 +67,19 @@ No model pricing is hard-coded. Set `OPENAI_INPUT_COST_PER_MILLION` and
 recorded as `null`. Deterministic mode uses a documented character-based token
 estimate, while OpenAI mode records the provider's returned usage counts.
 
+## Semantic caching
+
+Pass `--cache .cache/responses.json` or set `COPILOT_CACHE_PATH` to reuse grounded
+answers for semantically similar questions. Entries use hashed feature vectors and
+SHA-256 question fingerprints rather than raw questions. Cache hits require the same
+knowledge fingerprint, prompt version, and provider/model, expire after 24 hours, and
+are capped at 500 entries. The cache is written atomically with owner-only permissions;
+traces identify cache hits and record zero provider tokens for reused answers.
+
 ## Security and responsible AI
 
 Only version-controlled Markdown is indexed. Raw customer data and PII are excluded. Tool access is allowlisted and read-only. Retrieved text is treated as untrusted context, answers cite evidence, and unsupported questions receive an abstention. See `.env.example`; never commit API keys.
 
 ## Evaluation
 
-The committed dataset verifies source selection, abstention, and safety behavior without calling an external LLM. Production extensions should add provider-specific groundedness scoring, trace export dashboards, semantic caching, and human review sampling.
+The committed dataset verifies source selection, abstention, and safety behavior without calling an external LLM. Production extensions should add provider-specific groundedness scoring, trace export dashboards, and human review sampling.

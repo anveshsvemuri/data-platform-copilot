@@ -15,4 +15,5 @@ jobs:
       - run: ruff check .
       - run: pytest -q
       - run: data-copilot --index /tmp/knowledge-index.json --build-index
+      - run: data-copilot --index /tmp/knowledge-index.json --cache /tmp/responses.json "What is the model promotion threshold?"
       - run: data-copilot --index /tmp/knowledge-index.json --evaluate evals/groundedness.json

@@ -12,6 +12,7 @@ def main() -> None:
     parser.add_argument("question", nargs="?")
     parser.add_argument("--knowledge", type=Path, default=Path("knowledge"))
     parser.add_argument("--index", type=Path, help="Persistent retrieval index to load or build")
+    parser.add_argument("--cache", type=Path, help="Persistent privacy-safe semantic response cache")
     parser.add_argument("--build-index", action="store_true")
     parser.add_argument("--evaluate", type=Path)
     args = parser.parse_args()
@@ -21,7 +22,7 @@ def main() -> None:
         chunks = DataPlatformCopilot.create_index(args.knowledge, args.index)
         print(f"indexed chunks={chunks} output={args.index}")
         return
-    copilot = DataPlatformCopilot(args.knowledge, args.index)
+    copilot = DataPlatformCopilot(args.knowledge, args.index, cache_path=args.cache)
     if args.evaluate:
         print(evaluate(copilot, args.evaluate))
     elif args.question:

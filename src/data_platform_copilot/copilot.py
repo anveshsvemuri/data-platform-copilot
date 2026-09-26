@@ -4,6 +4,7 @@ import os
 import time
 from pathlib import Path
 
+from .cache import ResponseCache, knowledge_fingerprint
 from .guardrails import validate_question
 from .models import Citation, CopilotAnswer
 from .observability import append_trace, create_trace, estimate_tokens
@@ -25,13 +26,21 @@ SYSTEM_INSTRUCTION = (
 
 class DataPlatformCopilot:
     def __init__(
-        self, knowledge_dir: Path, index_path: Path | None = None, trace_path: Path | None = None
+        self,
+        knowledge_dir: Path,
+        index_path: Path | None = None,
+        trace_path: Path | None = None,
+        cache_path: Path | None = None,
     ):
         documents = load_documents(knowledge_dir)
         chunks = load_index(documents, index_path) if index_path else chunk_documents(documents)
         self.retriever = Retriever(chunks)
+        self.knowledge_hash = knowledge_fingerprint(chunks)
         configured_trace = os.getenv("COPILOT_TRACE_PATH")
         self.trace_path = trace_path or (Path(configured_trace) if configured_trace else None)
+        configured_cache = os.getenv("COPILOT_CACHE_PATH")
+        resolved_cache = cache_path or (Path(configured_cache) if configured_cache else None)
+        self.cache = ResponseCache(resolved_cache) if resolved_cache else None
 
     @staticmethod
     def create_index(knowledge_dir: Path, index_path: Path) -> int:
@@ -51,7 +60,27 @@ class DataPlatformCopilot:
             )
             for result in results
         ]
-        if not results:
+        provider = (
+            f"openai:{os.getenv('OPENAI_MODEL', 'gpt-4.1-mini')}"
+            if os.getenv("OPENAI_API_KEY")
+            else "deterministic-local"
+        )
+        cached = (
+            self.cache.get(
+                question,
+                knowledge_hash=self.knowledge_hash,
+                prompt_version=PROMPT_VERSION,
+                provider=provider,
+            )
+            if self.cache
+            else None
+        )
+        cache_hit = cached is not None
+        if cached:
+            answer = cached
+            input_tokens = output_tokens = 0
+            model = provider.removeprefix("openai:")
+        elif not results:
             answer = CopilotAnswer(
                 answer="I do not have enough approved documentation to answer that question.",
                 citations=[],
@@ -79,6 +108,14 @@ class DataPlatformCopilot:
                 estimate_tokens(answer.answer),
                 "deterministic-local",
             )
+        if self.cache and not cache_hit:
+            self.cache.put(
+                question,
+                answer,
+                knowledge_hash=self.knowledge_hash,
+                prompt_version=PROMPT_VERSION,
+                provider=provider,
+            )
         if self.trace_path:
             append_trace(
                 create_trace(
@@ -91,6 +128,7 @@ class DataPlatformCopilot:
                     latency_ms=(time.perf_counter() - started) * 1000,
                     input_tokens=input_tokens,
                     output_tokens=output_tokens,
+                    cache_hit=cache_hit,
                 ),
                 self.trace_path,
             )

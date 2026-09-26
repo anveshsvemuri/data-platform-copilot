@@ -24,6 +24,7 @@ def test_privacy_safe_trace_records_local_usage(tmp_path: Path, monkeypatch):
     assert trace["output_tokens"] > 0
     assert trace["latency_ms"] >= 0
     assert trace["question_hash"]
+    assert trace["cache_hit"] is False
     assert question not in trace_path.read_text()
     assert answer.answer not in trace_path.read_text()
 
