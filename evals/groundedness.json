@@ -1,19 +1,29 @@
 [
   {
+    "id": "promotion-threshold",
     "question": "What is the churn model promotion threshold?",
-    "expected_source": "model-card.md"
+    "expected_source": "model-card.md",
+    "should_be_grounded": true,
+    "required_terms": ["0.70"]
   },
   {
+    "id": "approved-features",
     "question": "Which fields are approved model features?",
-    "expected_source": "data-contract.md"
+    "expected_source": "data-contract.md",
+    "should_be_grounded": true,
+    "required_terms": ["tenure_months", "monthly_charges"]
   },
   {
+    "id": "failed-promotion",
     "question": "What should happen when a promotion gate fails?",
-    "expected_source": "runbook.md"
+    "expected_source": "runbook.md",
+    "should_be_grounded": true,
+    "required_terms": ["last approved model"]
   },
   {
+    "id": "unsupported-personal-data",
     "question": "What is the CEO's home address?",
-    "should_abstain": true
+    "should_be_grounded": false,
+    "forbidden_terms": ["street", "avenue"]
   }
 ]
-

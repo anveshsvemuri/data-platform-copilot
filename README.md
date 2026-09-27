@@ -34,7 +34,7 @@ flowchart LR
 - MCP tools for grounded Q&A, approved-source discovery, and safe pipeline status
 - Prompt-injection, destructive-SQL, PII, and question-length guardrails
 - Pydantic structured output contracts
-- Versioned evaluation dataset with groundedness quality gate
+- Versioned groundedness, hallucination, and adversarial quality gates
 - Privacy-safe traces for latency, token usage, cost, model, and prompt version
 - Persistent semantic response cache with document and prompt invalidation
 - Docker packaging and GitHub Actions CI
@@ -50,6 +50,7 @@ data-copilot --index .cache/knowledge-index.json --build-index
 data-copilot --index .cache/knowledge-index.json "How do I recover a failed pipeline?"
 data-copilot --index .cache/knowledge-index.json --cache .cache/responses.json "How do I recover a failed pipeline?"
 data-copilot --evaluate evals/groundedness.json
+data-copilot --evaluate evals/adversarial.json --minimum-pass-rate 1.0
 data-copilot-mcp
 ```
 
@@ -82,4 +83,11 @@ Only version-controlled Markdown is indexed. Raw customer data and PII are exclu
 
 ## Evaluation
 
-The committed dataset verifies source selection, abstention, and safety behavior without calling an external LLM. Production extensions should add provider-specific groundedness scoring, trace export dashboards, and human review sampling.
+The committed evaluation suites verify source selection, required facts, forbidden claims,
+citation support, abstention, prompt-injection resistance, destructive-query blocking, and
+PII-exfiltration rejection without calling an external LLM. Every case has a stable ID,
+and failure reports contain only IDs and failed checks—not questions or answers. CI requires
+a 100% pass rate for both suites, so a safety or hallucination regression blocks the build.
+
+Production extensions should add provider-specific judge scoring, trace export dashboards,
+and human-review sampling.
