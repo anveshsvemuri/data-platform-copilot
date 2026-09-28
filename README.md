@@ -36,6 +36,7 @@ flowchart LR
 - Pydantic structured output contracts
 - Versioned groundedness, hallucination, and adversarial quality gates
 - Privacy-safe traces for latency, token usage, cost, model, and prompt version
+- Aggregate observability reports with latency and groundedness alert gates
 - Persistent semantic response cache with document and prompt invalidation
 - Docker packaging and GitHub Actions CI
 
@@ -51,6 +52,7 @@ data-copilot --index .cache/knowledge-index.json "How do I recover a failed pipe
 data-copilot --index .cache/knowledge-index.json --cache .cache/responses.json "How do I recover a failed pipeline?"
 data-copilot --evaluate evals/groundedness.json
 data-copilot --evaluate evals/adversarial.json --minimum-pass-rate 1.0
+data-copilot --summarize-traces .cache/traces.jsonl --report-output .cache/observability.json --minimum-grounded-rate 0.80 --maximum-p95-latency-ms 3000 --fail-on-alert
 data-copilot-mcp
 ```
 
@@ -67,6 +69,14 @@ No model pricing is hard-coded. Set `OPENAI_INPUT_COST_PER_MILLION` and
 `OPENAI_OUTPUT_COST_PER_MILLION` when cost reporting is required; otherwise cost is
 recorded as `null`. Deterministic mode uses a documented character-based token
 estimate, while OpenAI mode records the provider's returned usage counts.
+
+Convert traces into a privacy-safe operational report with `--summarize-traces`.
+Reports aggregate event volume, mode/model/prompt-version counts, grounded and cache-hit
+rates, p50/p95/max latency, token usage, and configured-cost coverage. They never include
+event IDs, question hashes, prompts, answers, citations, or retrieved content. Optional
+groundedness and p95-latency thresholds produce a machine-readable alert status;
+`--fail-on-alert` exits with status 2 for scheduled quality gates. Report files are
+written atomically with owner-only permissions.
 
 ## Semantic caching
 
@@ -89,5 +99,5 @@ PII-exfiltration rejection without calling an external LLM. Every case has a sta
 and failure reports contain only IDs and failed checks—not questions or answers. CI requires
 a 100% pass rate for both suites, so a safety or hallucination regression blocks the build.
 
-Production extensions should add provider-specific judge scoring, trace export dashboards,
+Production extensions should add provider-specific judge scoring, managed dashboard export,
 and human-review sampling.

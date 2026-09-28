@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .copilot import DataPlatformCopilot
 from .evaluation import evaluate
+from .reporting import summarize_traces, write_report
 
 
 def main() -> None:
@@ -16,6 +17,11 @@ def main() -> None:
     parser.add_argument("--cache", type=Path, help="Persistent privacy-safe semantic response cache")
     parser.add_argument("--build-index", action="store_true")
     parser.add_argument("--evaluate", type=Path)
+    parser.add_argument("--summarize-traces", type=Path)
+    parser.add_argument("--report-output", type=Path)
+    parser.add_argument("--minimum-grounded-rate", type=float)
+    parser.add_argument("--maximum-p95-latency-ms", type=float)
+    parser.add_argument("--fail-on-alert", action="store_true")
     parser.add_argument(
         "--minimum-pass-rate",
         type=float,
@@ -23,6 +29,20 @@ def main() -> None:
         help="Exit with status 2 when evaluation falls below this rate",
     )
     args = parser.parse_args()
+    if args.summarize_traces:
+        report = summarize_traces(
+            args.summarize_traces,
+            minimum_grounded_rate=args.minimum_grounded_rate,
+            maximum_p95_latency_ms=args.maximum_p95_latency_ms,
+        )
+        if args.report_output:
+            write_report(report, args.report_output)
+        print(json.dumps(report, sort_keys=True))
+        if args.fail_on_alert and report["status"] == "alert":
+            raise SystemExit(2)
+        return
+    if args.report_output:
+        parser.error("--report-output requires --summarize-traces")
     if args.build_index:
         if not args.index:
             parser.error("--build-index requires --index")
