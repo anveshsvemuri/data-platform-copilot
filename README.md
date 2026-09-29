@@ -39,6 +39,7 @@ flowchart LR
 - Aggregate observability reports with latency and groundedness alert gates
 - Persistent semantic response cache with document and prompt invalidation
 - Docker packaging and GitHub Actions CI
+- Bearer-protected Streamable HTTP MCP transport and secure AWS ECS deployment
 
 ## Run
 
@@ -57,6 +58,11 @@ data-copilot-mcp
 ```
 
 The MCP server uses stdio and exposes `ask_platform`, `list_approved_sources`, and `get_pipeline_status`. Configure an MCP client to launch `data-copilot-mcp` from the repository root. Set `RETRIEVAL_INDEX=.cache/knowledge-index.json` to load the validated persistent index; otherwise the same deterministic chunks are built in memory.
+
+For a remote deployment, set `MCP_TRANSPORT=streamable-http`, `MCP_HOST=0.0.0.0`,
+`MCP_SERVER_URL`, and a strong `MCP_BEARER_TOKEN`. Remote mode refuses to start without
+the token. Bearer comparison is constant-time, the required scope is `copilot:read`, and
+the server remains stateless for safe horizontal scaling. Keep stdio mode for local clients.
 
 ## Observability
 
@@ -91,6 +97,34 @@ traces identify cache hits and record zero provider tokens for reused answers.
 
 Only version-controlled Markdown is indexed. Raw customer data and PII are excluded. Tool access is allowlisted and read-only. Retrieved text is treated as untrusted context, answers cite evidence, and unsupported questions receive an abstention. See `.env.example`; never commit API keys.
 
+## Deploy on AWS
+
+The credential-free module in [`infra/terraform`](infra/terraform) deploys the
+Streamable HTTP server on ECS Fargate behind an Application Load Balancer. It includes
+an immutable, vulnerability-scanned ECR repository, digest-pinned images, trusted-CIDR
+ingress, bearer-token injection from an existing Secrets Manager secret, least-privilege
+task roles, a read-only container filesystem, CloudWatch logs and Container Insights,
+and automatic deployment rollback. Secret values never enter Terraform configuration or
+state.
+
+Create the token outside Terraform, prepare variables, and create the ECR repository:
+
+```bash
+aws secretsmanager create-secret \
+  --name data-platform-copilot-token \
+  --secret-string "$(openssl rand -hex 32)"
+cp infra/terraform/terraform.tfvars.example infra/terraform/terraform.tfvars
+cd infra/terraform
+terraform init
+terraform apply -target=aws_ecr_repository.copilot
+```
+
+Build and push the image, record its digest in `terraform.tfvars`, then run
+`terraform plan -out=tfplan` and `terraform apply tfplan`. The module rejects
+`0.0.0.0/0`, requires an ACM certificate for HTTPS, and accepts only trusted client CIDRs.
+The task has no AWS API permissions, and generated
+indexes, caches, traces, credentials, Terraform state, and plans remain uncommitted.
+
 ## Evaluation
 
 The committed evaluation suites verify source selection, required facts, forbidden claims,
@@ -100,4 +134,4 @@ and failure reports contain only IDs and failed checks—not questions or answer
 a 100% pass rate for both suites, so a safety or hallucination regression blocks the build.
 
 Production extensions should add provider-specific judge scoring, managed dashboard export,
-and human-review sampling.
+OIDC-based authorization, and human-review sampling.

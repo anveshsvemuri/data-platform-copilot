@@ -21,3 +21,16 @@ jobs:
       - run: data-copilot --summarize-traces /tmp/traces.jsonl --report-output /tmp/observability.json --minimum-grounded-rate 1.0 --maximum-p95-latency-ms 5000 --fail-on-alert
       - run: data-copilot --index /tmp/knowledge-index.json --evaluate evals/groundedness.json --minimum-pass-rate 1.0
       - run: data-copilot --index /tmp/knowledge-index.json --evaluate evals/adversarial.json --minimum-pass-rate 1.0
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/terraform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false
+      - run: terraform validate

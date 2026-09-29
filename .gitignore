@@ -5,3 +5,8 @@ __pycache__/
 .env
 *.pyc
 .cache/
+infra/terraform/.terraform/
+infra/terraform/*.tfstate*
+infra/terraform/*.tfplan
+infra/terraform/terraform.tfvars
+infra/terraform/.terraform.lock.hcl
