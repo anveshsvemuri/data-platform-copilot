@@ -11,3 +11,8 @@ output "mcp_endpoint" {
 output "ecs_cluster_name" {
   value = aws_ecs_cluster.copilot.name
 }
+
+output "observability_dashboard" {
+  description = "CloudWatch dashboard for aggregate copilot health metrics."
+  value       = aws_cloudwatch_dashboard.copilot.dashboard_name
+}

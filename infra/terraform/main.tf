@@ -25,6 +25,59 @@ resource "aws_cloudwatch_log_group" "copilot" {
   retention_in_days = var.log_retention_days
 }
 
+resource "aws_cloudwatch_metric_alarm" "quality" {
+  alarm_name          = "${var.name_prefix}-${var.environment}-quality"
+  alarm_description   = "Copilot groundedness or latency quality gate reported an alert."
+  namespace           = "DataPlatformCopilot"
+  metric_name         = "Alert"
+  dimensions          = { Environment = var.environment }
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  threshold           = 1
+  evaluation_periods  = 1
+  period              = 300
+  statistic           = "Maximum"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = var.alarm_actions
+}
+
+resource "aws_cloudwatch_dashboard" "copilot" {
+  dashboard_name = "${var.name_prefix}-${var.environment}"
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type   = "metric"
+        width  = 12
+        height = 6
+        properties = {
+          title  = "Answer quality and cache efficiency"
+          region = var.aws_region
+          view   = "timeSeries"
+          metrics = [
+            ["DataPlatformCopilot", "GroundedRate", "Environment", var.environment],
+            ["DataPlatformCopilot", "CacheHitRate", "Environment", var.environment],
+            ["DataPlatformCopilot", "Alert", "Environment", var.environment]
+          ]
+        }
+      },
+      {
+        type   = "metric"
+        width  = 12
+        height = 6
+        properties = {
+          title  = "Latency, token usage, and estimated cost"
+          region = var.aws_region
+          view   = "timeSeries"
+          metrics = [
+            ["DataPlatformCopilot", "P95Latency", "Environment", var.environment],
+            ["DataPlatformCopilot", "TotalTokens", "Environment", var.environment],
+            ["DataPlatformCopilot", "EstimatedCost", "Environment", var.environment]
+          ]
+        }
+      }
+    ]
+  })
+}
+
 resource "aws_ecs_cluster" "copilot" {
   name = var.name_prefix
 

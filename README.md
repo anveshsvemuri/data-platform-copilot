@@ -37,6 +37,7 @@ flowchart LR
 - Versioned groundedness, hallucination, and adversarial quality gates
 - Privacy-safe traces for latency, token usage, cost, model, and prompt version
 - Aggregate observability reports with latency and groundedness alert gates
+- Privacy-safe CloudWatch metric export, quality alarm, and operations dashboard
 - Persistent semantic response cache with document and prompt invalidation
 - Docker packaging and GitHub Actions CI
 - Bearer-protected Streamable HTTP MCP transport and secure AWS ECS deployment
@@ -83,6 +84,21 @@ event IDs, question hashes, prompts, answers, citations, or retrieved content. O
 groundedness and p95-latency thresholds produce a machine-readable alert status;
 `--fail-on-alert` exits with status 2 for scheduled quality gates. Report files are
 written atomically with owner-only permissions.
+
+Export a completed report as CloudWatch Embedded Metric Format (EMF):
+
+```bash
+data-copilot \
+  --export-cloudwatch .cache/observability.json \
+  --environment production
+```
+
+Scheduled containers can write the JSON line to stdout for automatic CloudWatch Logs
+metric extraction, or use `--cloudwatch-output` for pre-deployment validation. The
+exporter uses a strict allowlist: it emits aggregate quality, latency, token, cache,
+and estimated-cost metrics without prompts, answers, citations, question hashes,
+model names, or retrieved passages. Terraform creates a quality alarm and dashboard;
+set `alarm_actions` to approved SNS or incident-action ARNs to route alerts.
 
 ## Semantic caching
 
@@ -133,5 +149,6 @@ PII-exfiltration rejection without calling an external LLM. Every case has a sta
 and failure reports contain only IDs and failed checks—not questions or answers. CI requires
 a 100% pass rate for both suites, so a safety or hallucination regression blocks the build.
 
-Production extensions should add provider-specific judge scoring, managed dashboard export,
-OIDC-based authorization, and human-review sampling.
+Optional production extensions include provider-specific judge scoring, OIDC-based
+authorization, and human-review sampling. These require provider or governance choices
+outside the deterministic reference implementation.

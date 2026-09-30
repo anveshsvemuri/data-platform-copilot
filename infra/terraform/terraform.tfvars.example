@@ -5,3 +5,7 @@ allowed_cidr_blocks  = ["203.0.113.10/32"]
 image_digest         = "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 mcp_token_secret_arn = "arn:aws:secretsmanager:us-east-1:123456789012:secret:data-platform-copilot-token"
 certificate_arn      = "arn:aws:acm:us-east-1:123456789012:certificate/00000000-0000-0000-0000-000000000000"
+
+# Optional incident integration, for example an SNS topic ARN.
+environment   = "demo"
+alarm_actions = []

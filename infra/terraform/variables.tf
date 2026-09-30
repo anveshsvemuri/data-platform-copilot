@@ -67,3 +67,15 @@ variable "log_retention_days" {
   type        = number
   default     = 14
 }
+
+variable "environment" {
+  description = "Environment dimension used by copilot observability metrics."
+  type        = string
+  default     = "demo"
+}
+
+variable "alarm_actions" {
+  description = "Optional SNS topic ARNs or incident actions invoked by copilot alarms."
+  type        = list(string)
+  default     = []
+}

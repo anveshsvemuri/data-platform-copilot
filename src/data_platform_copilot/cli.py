@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
+from .cloud_metrics import export_report_metrics
 from .copilot import DataPlatformCopilot
 from .evaluation import evaluate
 from .reporting import summarize_traces, write_report
@@ -19,6 +20,9 @@ def main() -> None:
     parser.add_argument("--evaluate", type=Path)
     parser.add_argument("--summarize-traces", type=Path)
     parser.add_argument("--report-output", type=Path)
+    parser.add_argument("--export-cloudwatch", type=Path)
+    parser.add_argument("--cloudwatch-output", type=Path)
+    parser.add_argument("--environment", default="demo")
     parser.add_argument("--minimum-grounded-rate", type=float)
     parser.add_argument("--maximum-p95-latency-ms", type=float)
     parser.add_argument("--fail-on-alert", action="store_true")
@@ -29,6 +33,17 @@ def main() -> None:
         help="Exit with status 2 when evaluation falls below this rate",
     )
     args = parser.parse_args()
+    if args.export_cloudwatch:
+        payload = export_report_metrics(
+            args.export_cloudwatch, args.environment, args.cloudwatch_output
+        )
+        if args.cloudwatch_output is None:
+            print(payload, end="")
+        else:
+            print(f"exported CloudWatch metrics to {args.cloudwatch_output}")
+        return
+    if args.cloudwatch_output:
+        parser.error("--cloudwatch-output requires --export-cloudwatch")
     if args.summarize_traces:
         report = summarize_traces(
             args.summarize_traces,
